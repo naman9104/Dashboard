@@ -112,16 +112,16 @@
 <script>
     // --- NAV ---
     function nav(id, btn) {
-        document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        btn.classList.add('active');
-    }
-
-    setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour12: false});
-    }, 1000);
-
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById(id);
+    target.classList.add('active');
+    btn.classList.add('active');
+    
+    // Auto-scroll main content to top when switching tabs
+    document.querySelector('.main-content').scrollTop = 0;
+}
     // --- SEARCH FILTER (STRICT) ---
     const restrictedRegex = /(p.*o.*r.*n|s.*e.*x|d.*i.*c.*k|f.*u.*c.*k|p.*u.*s.*s.*y|b.*o.*o.*b.*s)/i;
     let history = JSON.parse(localStorage.getItem('sHistory')) || [];
