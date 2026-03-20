@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+bro fast just fix clock in this code <!DOCTYPE html>
 
 <html lang="en">
 
@@ -473,7 +473,22 @@
 
 
     renderHistory(); renderTasks(); updateChart();
+// --- CLOCK FIX (FINAL MINIMAL) ---
+setInterval(() => {
+    const now = new Date();
 
+    let hrs = now.getHours();
+    let mins = now.getMinutes();
+    let secs = now.getSeconds();
+
+    const ampm = hrs >= 12 ? 'PM' : 'AM';
+    hrs = hrs % 12 || 12;
+
+    document.getElementById('clock').innerText =
+        `${hrs < 10 ? '0'+hrs : hrs}:` +
+        `${mins < 10 ? '0'+mins : mins}:` +
+        `${secs < 10 ? '0'+secs : secs} ${ampm}`;
+}, 1000);
 </script>
 
 </body>
