@@ -76,6 +76,19 @@
 
                     <h3>Spotify Mixer</h3>
 
+<label style="font-size:12px; color:#aaa;">Choose Playlist</label>
+<div class="custom-dropdown">
+    <div class="selected" onclick="toggleDropdown()">🎵 Lofi Beats</div>
+
+    <div class="options" id="dropdownOptions">
+        <div onclick="selectOption('37i9dQZF1DX3rxVfibe1L0','🎵 Lofi Beats')">🎵 Lofi Beats</div>
+        <div onclick="selectOption('3BmPwjUluKYBBSQUwPElxH','🔥 Hindi Raps')">🔥 Hindi Raps</div>
+        <div onclick="selectOption('37i9dQZF1DWZeKCadgRdKQ','🧠 Deep Focus')">🧠 Deep Focus</div>
+        <div onclick="selectOption('37i9dQZF1DWXVJK4aT7pmk','🎬 Bollywood')">🎬 Bollywood</div>
+        <div onclick="selectOption('saved','💾 Your Playlist')">💾 Your Playlist</div>
+        <div onclick="selectOption('custom','➕ Add Playlist')">➕ Add Playlist</div>
+    </div>
+</div>
                     <select id="genreSelect" onchange="changePlaylist()">
 
                         <option value="37i9dQZF1DX3rxVfibe1L0">Lofi Beats</option>
@@ -190,6 +203,10 @@
                             <button class="btn-action" style="background:#333; color:white;" onclick="pauseTimer()">Pause</button>
 
                             <button class="btn-action" style="background:none; border: 1px solid #444; color:white;" onclick="resetTimer()">Reset</button>
+
+                            <input id="pomoInput" type="number" placeholder="Set minutes (e.g. 25)" style="margin-top:10px;">
+                            
+                            <button class="btn-action" onclick="setPomodoroTime()">Update Time</button>
 
                         </div>
 
@@ -331,15 +348,25 @@ let customPlaylist = localStorage.getItem('customPlaylist') || null;
         if (userLink) {
             let match = userLink.match(/playlist\/([a-zA-Z0-9]+)/);
 
-            if (match && match[1]) {
-                const playlistId = match[1];
+           if (match && match[1]) {
+    const playlistId = match[1];
 
-                // SAVE 🔥
-                localStorage.setItem('customPlaylist', playlistId);
+    // SAVE playlist
+    localStorage.setItem('customPlaylist', playlistId);
 
-                document.getElementById('spPlayer').src =
-                    `https://open.spotify.com/embed/playlist/${playlistId}`;
-            } else {
+    // 🔥 ADD THIS (NAME SYSTEM)
+    let pname = prompt("Give your playlist a name:");
+    if (pname && pname.trim() !== "") {
+        localStorage.setItem('playlistName', "🎧 " + pname.trim());
+    } else {
+        localStorage.setItem('playlistName', "🎧 Your Playlist");
+    }
+    updatePlaylistName();
+
+    // LOAD PLAYER
+    document.getElementById('spPlayer').src =
+        `https://open.spotify.com/embed/playlist/${playlistId}`;
+} else {
                 alert("Invalid Spotify playlist link 😢");
             }
         }
@@ -360,6 +387,23 @@ let customPlaylist = localStorage.getItem('customPlaylist') || null;
         document.getElementById('spPlayer').src =
             `https://open.spotify.com/embed/playlist/${id}`;
     }
+}
+function updatePlaylistName() {
+    let name = localStorage.getItem('playlistName') || "🎧 Your Playlist";
+    document.querySelector('#genreSelect option[value="saved"]').textContent = name;
+}
+function toggleDropdown() {
+    const box = document.getElementById('dropdownOptions');
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+}
+
+function selectOption(value, text) {
+    document.querySelector('.selected').innerText = text;
+    document.getElementById('dropdownOptions').style.display = 'none';
+
+    // 🔥 CONNECT WITH YOUR EXISTING SYSTEM
+    document.getElementById('genreSelect').value = value;
+    changePlaylist();
 }
     // --- CHART & GOAL ---
 
@@ -430,12 +474,11 @@ let customPlaylist = localStorage.getItem('customPlaylist') || null;
 
 
     function updateChart() {
+    chart.data.datasets[0].data = dataPts; // progress line
+    chart.data.datasets[1].data = labels.map(() => userGoal); // goal line
 
-        chart.data.datasets.data = labels.map(() => userGoal);
-
-        chart.update();
-
-    }
+    chart.update();
+}
 
 
 
@@ -467,10 +510,27 @@ let customPlaylist = localStorage.getItem('customPlaylist') || null;
 
     function pauseTimer() { clearInterval(timerId); timerId = null; }
 
-    function resetTimer() { pauseTimer(); timeLeft = 25 * 60; document.getElementById('timer-display').innerText = "25:00"; }
+    function resetTimer() {
+    pauseTimer();
 
+    let saved = localStorage.getItem('pomoTime') || 25;
+    timeLeft = saved * 60;
 
+    document.getElementById('timer-display').innerText = `${saved}:00`;
+}    
+    function setPomodoroTime() {
+    const val = document.getElementById('pomoInput').value;
 
+    if (val && val > 0) {
+        timeLeft = val * 60;
+        localStorage.setItem('pomoTime', val);
+
+        const mins = Math.floor(timeLeft / 60);
+        document.getElementById('timer-display').innerText = `${mins}:00`;
+    }
+}
+
+    
     // --- NOTES & TASKS ---
 
     const noteBox = document.getElementById('noteBox');
@@ -512,6 +572,12 @@ let customPlaylist = localStorage.getItem('customPlaylist') || null;
 
     document.getElementById('genreSelect').value = "saved";
 
+}
+updatePlaylistName();
+let savedPomo = parseInt(localStorage.getItem('pomoTime'));
+if (savedPomo) {
+    timeLeft = savedPomo * 60;
+    document.getElementById('timer-display').innerText = `${savedPomo}:00`;
 }
 // --- CLOCK FIX (FINAL MINIMAL) ---
 setInterval(() => {
