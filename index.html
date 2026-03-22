@@ -85,7 +85,10 @@
                         <option value="37i9dQZF1DWZeKCadgRdKQ">Deep Focus</option>
 
                         <option value="37i9dQZF1DWXVJK4aT7pmk">Bollywood Butter</option>
+                        <option value="saved">🎧 Your Playlist</option>
+                        <option value="custom">➕ Add Your Playlist</option>
 
+                        
                     </select>
 
                     <iframe id="spPlayer" style="border-radius:12px; margin-top: 10px;" 
@@ -221,7 +224,7 @@
 
 
 <script>
-
+let customPlaylist = localStorage.getItem('customPlaylist') || null;
     // --- NAV ---
 
     function nav(id, btn) {
@@ -318,16 +321,46 @@
 
     // --- SPOTIFY ---
 
-    function changePlaylist() {
+   function changePlaylist() {
+    const select = document.getElementById('genreSelect');
+    const id = select.value;
 
-        const id = document.getElementById('genreSelect').value;
+    if (id === "custom") {
+        let userLink = prompt("Paste your Spotify playlist link:");
 
-        document.getElementById('spPlayer').src = `https://open.spotify.com/embed/playlist/${id}`;
+        if (userLink) {
+            let match = userLink.match(/playlist\/([a-zA-Z0-9]+)/);
 
+            if (match && match[1]) {
+                const playlistId = match[1];
+
+                // SAVE 🔥
+                localStorage.setItem('customPlaylist', playlistId);
+
+                document.getElementById('spPlayer').src =
+                    `https://open.spotify.com/embed/playlist/${playlistId}`;
+            } else {
+                alert("Invalid Spotify playlist link 😢");
+            }
+        }
+
+        select.value = "saved"; // switch to saved option
+
+    } else if (id === "saved") {
+        let saved = localStorage.getItem('customPlaylist');
+
+        if (saved) {
+            document.getElementById('spPlayer').src =
+                `https://open.spotify.com/embed/playlist/${saved}`;
+        } else {
+            alert("No saved playlist yet 😢");
+        }
+
+    } else {
+        document.getElementById('spPlayer').src =
+            `https://open.spotify.com/embed/playlist/${id}`;
     }
-
-
-
+}
     // --- CHART & GOAL ---
 
     let labels = JSON.parse(localStorage.getItem('pLabels')) || [];
@@ -473,6 +506,13 @@
 
 
     renderHistory(); renderTasks(); updateChart();
+    if (customPlaylist) {
+    document.getElementById('spPlayer').src =
+        `https://open.spotify.com/embed/playlist/${customPlaylist}`;
+
+    document.getElementById('genreSelect').value = "saved";
+
+}
 // --- CLOCK FIX (FINAL MINIMAL) ---
 setInterval(() => {
     const now = new Date();
