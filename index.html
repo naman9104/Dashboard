@@ -33,7 +33,19 @@
     </div>
 
 </div>
+<div id="alarm" class="alert">
 
+    <div class="restriction-card">
+
+        <h2 style="color: var(--danger);">Session over</h2>
+
+        <p style="margin: 20px 0;">YOUR TIME IS OVER. PLEASE STOP ALARM<b style="color: var(--danger);">!!!!</b></p>
+
+        <button class="btn-action" style="background:var(--danger); color:rgb(255, 255, 255);" onclick="document.getElementById('alarm').style.display='none'">I Understand</button>
+
+    </div>
+
+</div>
 
 
 <div class="app-container">
@@ -197,14 +209,16 @@
                         <div id="timer-display">25:00</div>
 
                         <div class="pomo-btns">
+                            <input id="pomoInput" type="text" placeholder="Set minutes (e.g. 25)" style="margin-top:10px;">
 
                             <button class="btn-action" style="background:var(--pomodoro); color:white;" onclick="startTimer()">Start</button>
 
                             <button class="btn-action" style="background:#333; color:white;" onclick="pauseTimer()">Pause</button>
 
                             <button class="btn-action" style="background:none; border: 1px solid #444; color:white;" onclick="resetTimer()">Reset</button>
+                            <button class="btn-action" style="background:#ff4757; color:white;" onclick="stopAlarm()">Stop Alarm</button>
 
-                            <input id="pomoInput" type="number" placeholder="Set minutes (e.g. 25)" style="margin-top:10px;">
+                            
                             
                             <button class="btn-action" onclick="setPomodoroTime()">Update Time</button>
 
@@ -238,7 +252,7 @@
 
 </div>
 
-
+<audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
 
 <script>
 let customPlaylist = localStorage.getItem('customPlaylist') || null;
@@ -484,49 +498,104 @@ function selectOption(value, text) {
 
     // --- POMODORO ---
 
-    let timeLeft = 25 * 60;
+let timeLeft = 25 * 60;
+let timerId = null;
 
-    let timerId = null;
+// 🔥 DISPLAY FORMATTER (SMART)
+function updateTimerDisplay() {
+    let hrs = Math.floor(timeLeft / 3600);
+    let mins = Math.floor((timeLeft % 3600) / 60);
+    let secs = timeLeft % 60;
 
-    function startTimer() {
+    let display = "";
 
-        if(timerId) return;
+    if (hrs > 0) display += `${hrs}h `;
+    if (mins > 0 || hrs > 0) display += `${mins}m `;
+    display += `${secs}s`;
 
-        timerId = setInterval(() => {
+    document.getElementById('timer-display').innerText = display.trim();
+}
 
-            timeLeft--;
+// 🔥 START
+function startTimer() {
+    if (timerId) return;
 
-            const mins = Math.floor(timeLeft / 60);
+    timerId = setInterval(() => {
+        timeLeft--;
 
-            const secs = timeLeft % 60;
+        updateTimerDisplay();
 
-            document.getElementById('timer-display').innerText = `${mins}:${secs < 10 ? '0'+secs : secs}`;
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            timerId = null;
+            document.getElementById('alarm').style.display = 'flex';
+            playAlarm();
+            
+        }
+    }, 1000);
+}
+function playAlarm() {
+    const sound = document.getElementById('alarmSound');
+    sound.loop = true; // restart from beginning
+    sound.play();
+}
 
-            if(timeLeft <= 0) { clearInterval(timerId); alert("Session over!"); resetTimer(); }
+   function stopAlarm() {
+    const sound = document.getElementById('alarmSound');
+    sound.pause();
+    sound.currentTime = 0;
 
-        }, 1000);
+    document.getElementById('alarm').style.display = 'none';
 
-    }
+}
 
-    function pauseTimer() { clearInterval(timerId); timerId = null; }
+// 🔥 PAUSE
+function pauseTimer() {
+    clearInterval(timerId);
+    timerId = null;
+}
 
-    function resetTimer() {
+// 🔥 RESET
+function resetTimer() {
     pauseTimer();
 
-    let saved = localStorage.getItem('pomoTime') || 25;
+    let saved = parseInt(localStorage.getItem('pomoTime')) || 25;
     timeLeft = saved * 60;
 
-    document.getElementById('timer-display').innerText = `${saved}:00`;
-}    
-    function setPomodoroTime() {
-    const val = document.getElementById('pomoInput').value;
+    updateTimerDisplay();
+}
 
-    if (val && val > 0) {
-        timeLeft = val * 60;
-        localStorage.setItem('pomoTime', val);
+// 🔥 SMART INPUT (h m s SUPPORT)
+function setPomodoroTime() {
+    let val = document.getElementById('pomoInput').value.trim().toLowerCase();
+    if (!val) return;
 
-        const mins = Math.floor(timeLeft / 60);
-        document.getElementById('timer-display').innerText = `${mins}:00`;
+    let totalSeconds = 0;
+
+    let matches = val.match(/(\d+(\.\d+)?)(h|m|s)/g);
+
+    if (matches) {
+        matches.forEach(part => {
+            let num = parseFloat(part);
+            if (part.includes('h')) totalSeconds += num * 3600;
+            else if (part.includes('m')) totalSeconds += num * 60;
+            else if (part.includes('s')) totalSeconds += num;
+        });
+    } else {
+        totalSeconds = parseInt(val) * 60;
+    }
+
+    if (totalSeconds > 0) {
+        // 🔥 FIX: STOP OLD TIMER
+        clearInterval(timerId);
+        timerId = null;
+
+        timeLeft = Math.floor(totalSeconds);
+
+        // store in minutes (for reload)
+        localStorage.setItem('pomoTime', Math.floor(totalSeconds / 60));
+
+        updateTimerDisplay();
     }
 }
 
@@ -574,11 +643,12 @@ function selectOption(value, text) {
 
 }
 updatePlaylistName();
+
 let savedPomo = parseInt(localStorage.getItem('pomoTime'));
 if (savedPomo) {
     timeLeft = savedPomo * 60;
-    document.getElementById('timer-display').innerText = `${savedPomo}:00`;
 }
+updateTimerDisplay();
 // --- CLOCK FIX (FINAL MINIMAL) ---
 setInterval(() => {
     const now = new Date();
